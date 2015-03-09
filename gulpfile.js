@@ -6,6 +6,8 @@ var istanbul = require('gulp-istanbul');
 var bump = require('gulp-bump');
 var git = require('gulp-git');
 var filter = require('gulp-filter');
+var jshint = require('gulp-jshint');
+var stylish = require('jshint-stylish');
 var tag = require('gulp-tag-version');
 
 gulp.task('test', function (done) {
@@ -39,6 +41,10 @@ function inc(importance) {
         .pipe(tag());
 }
 
+gulp.task('publish', function (done) {
+    spawn('npm', ['publish'], { stdio: 'inherit' }).on('close', done);
+});
+
 gulp.task('patch', function () {
     return inc('patch');
 });
@@ -47,6 +53,16 @@ gulp.task('feature', function () {
     return inc('minor');
 });
 
-gulp.task('release', function () {
+gulp.task('major', function () {
     return inc('major');
 });
+
+gulp.task('lint', function () {
+    return gulp.src('./lib/**/*.js')
+        .pipe(jshint())
+        .pipe(jshint.reporter(stylish));
+});
+
+gulp.task('release', ['lint', 'test', 'patch']);
+
+gulp.task('default', ['lint', 'test']);
