@@ -9,6 +9,7 @@ var filter = require('gulp-filter');
 var jshint = require('gulp-jshint');
 var stylish = require('jshint-stylish');
 var tag = require('gulp-tag-version');
+var spawn = require('child_process').spawn;
 
 gulp.task('test', function (done) {
     gulp.src(['lib/**/*'])
@@ -38,7 +39,7 @@ function inc(importance) {
         .pipe(filter('package.json'))
 
         // **tag it in the repository**
-        .pipe(tag());
+        .pipe(tag())
 }
 
 gulp.task('publish', function (done) {
@@ -61,6 +62,10 @@ gulp.task('lint', function () {
     return gulp.src('./lib/**/*.js')
         .pipe(jshint())
         .pipe(jshint.reporter(stylish));
+});
+
+gulp.task('push', function (done) {
+    git.push('origin', 'master', {args: '--tags'}, done);
 });
 
 gulp.task('release', ['lint', 'test', 'patch']);
