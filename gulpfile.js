@@ -64,6 +64,21 @@ gulp.task('lint', function () {
         .pipe(jshint.reporter(stylish));
 });
 
+gulp.task('tag', function () {
+    return gulp.src(['./package.json'])
+        // save it back to filesystem
+        .pipe(gulp.dest('./'))
+
+        // commit the changed version number
+        .pipe(git.commit('bumps package version'))
+
+        // read only one file to get the version number
+        .pipe(filter('package.json'))
+
+        // **tag it in the repository**
+        .pipe(tag());
+});
+
 gulp.task('push', function (done) {
     git.push('origin', 'master', {args: '--tags'}, done);
 });
