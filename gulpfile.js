@@ -2,7 +2,6 @@
 
 var gulp = require('gulp');
 var mocha = require('gulp-mocha');
-var cover = require('gulp-coverage');
 var istanbul = require('gulp-istanbul');
 
 gulp.task('test', function (done) {
