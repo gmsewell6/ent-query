@@ -95,6 +95,47 @@ describe('Query', function () {
                     .should.eventually.be.rejectedWith('failed');
             });
         });
+
+        it('should return the same promise when executed twice', function () {
+            var query = new Query()
+                .handler(function(query, reply) {
+                    reply();
+                });
+
+            query.execute().should.equal(query.execute());
+        });
+    });
+
+    describe('through()', function () {
+        it('should support adding a through function', function () {
+            var query = new Query();
+            query.should.respondTo('through');
+
+            query.through(function () {}).should.equal(query);
+            query.should.have.property('_through').that.has.length(1);
+        });
+
+        it('should invoke the through function when the query is streamed', function () {
+            var spy = sinon.spy(function (stream) {
+                return stream.tap(function(r) {
+                    r.full = r.first + ' ' + r.last;
+                });
+            });
+
+            return new Query()
+                .handler(function (query, reply) {
+                    reply(null, [{ first: 'Brad', last: 'Leupen' }]);
+                })
+                .through(spy)
+                .execute()
+                .then(function (result) {
+                    return result.toArray()
+                })
+                .then(function (arr) {
+                    arr.should.have.length(1);
+                    arr.should.have.deep.members([{ first: 'Brad', last: 'Leupen', full: 'Brad Leupen' }]);
+                });
+        });
     });
 
     describe('stream()', function () {
@@ -139,6 +180,36 @@ describe('Query', function () {
             var query = new Query();
             query.use(mw).should.equal(query);
             mw.should.have.been.calledWith(query);
+        });
+    });
+
+    describe('tap()', function () {
+        it('should intercept the query result before the stream starts', function () {
+            var spy = sinon.spy(function(stream) {
+                return stream.tap(function (r) {
+                    r.full = r.first + ' ' + r.last;
+                });
+            });
+
+            return new Query()
+                .handler(function (query, reply) {
+                    reply(null, [{ first: 'Brad', last: 'Leupen' }]).fields(['first', 'last']);
+                })
+                .through(spy)
+                .tap(function (result) {
+                    result.fields.should.have.members(['first', 'last']);
+                    result.fields.push('full');
+                    spy.should.not.have.been.called;
+                })
+                .execute()
+                .then(function (result) {
+                    result.fields.should.have.members(['first', 'last', 'full']);
+                    return result.toArray();
+                })
+                .then(function (arr) {
+                    arr.should.have.length(1);
+                    arr.should.have.deep.members([{ first: 'Brad', last: 'Leupen', full: 'Brad Leupen' }]);
+                });
         });
     });
 });
