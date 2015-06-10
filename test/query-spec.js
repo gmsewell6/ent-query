@@ -11,6 +11,19 @@ var Query = require('../lib/query').Query;
 var QueryResult = require('../lib/query').QueryResult;
 
 describe('Query', function () {
+    describe('handler()', function () {
+        it('should bind to a receiver', function () {
+            var foo = {
+                handler: function (query, reply) {
+                    foo.should.equal(this);
+                    reply();
+                }
+            };
+
+            new Query().handler(foo.handler, foo).execute();
+        });
+    });
+
     describe('execute()', function () {
         describe('when no handler is defined', function () {
             it('should reject the promise', function () {
@@ -117,6 +130,15 @@ describe('Query', function () {
                     arr.should.have.length(3);
                     arr.should.have.members(['foo', 'bar', 'baz']);
                 })
+        });
+    });
+
+    describe('use()', function () {
+        it('should invoke the middleware function', function () {
+            var mw = sinon.spy();
+            var query = new Query();
+            query.use(mw).should.equal(query);
+            mw.should.have.been.calledWith(query);
         });
     });
 });
