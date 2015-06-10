@@ -1,6 +1,6 @@
 {
   "name": "ent-query",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "A tiny query interface",
   "main": "lib/index.js",
   "directories": {
@@ -13,7 +13,7 @@
     "type": "git",
     "url": "module_git_repo"
   },
-  "author": "",
+  "author": "Entrinsik",
   "license": "MIT",
   "devDependencies": {
     "chai": "^3.0.0",
