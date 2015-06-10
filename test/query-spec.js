@@ -22,6 +22,7 @@ describe('Query', function () {
             it('should invoke the handler', function () {
                 var spy = sinon.spy(function (query, reply) {
                     query.payload.should.equal('select * from country');
+                    query.params.should.deep.equal({ foo: 'bar' });
                     reply();
                 });
 
