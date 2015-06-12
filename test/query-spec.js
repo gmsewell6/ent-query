@@ -63,16 +63,47 @@ describe('Query', function () {
             it('should emit a cancellation event on the query', function () {
                 var spy = sinon.spy();
 
-                var handler = function(query, reply) {
-                    query.on('cancel', spy)
-                };
-
-                var query = new Query().handler(handler);
-
-                query.execute();
-                query.cancel();
+                var query = new Query()
+                    .on('cancel', spy)
+                    .cancel();
 
                 spy.should.have.been.called;
+                query.cancelled.should.be.true;
+            });
+
+            it('should not be invoked if query is cancelled before execution', function () {
+                var spy = sinon.spy(function(query, reply) {
+                    reply();
+                });
+
+                new Query()
+                    .handler(spy)
+                    .cancel()
+                    .execute()
+                    .should.eventually.be.rejectedWith('cancellation error')
+                    .then(function () {
+                        spy.should.not.have.been.called;
+                    });
+            });
+
+            it('should emit a cancellation event when the execution promise is cancelled', function () {
+                var spy = sinon.spy();
+
+                var handler = function (query, reply) {
+                    reply();
+                };
+
+                var q = new Query()
+                    .handler(handler)
+                    .on('cancel', spy);
+
+                return q.execute()
+                    .cancel()
+                    .should.eventually.be.rejectedWith('cancellation error')
+                    .then(function () {
+                        spy.should.have.been.called;
+                        q.cancelled.should.be.true;
+                    });
             });
 
             it('should reject the promise with an asynchronous error', function () {
@@ -183,7 +214,7 @@ describe('Query', function () {
         });
     });
 
-    describe('tap()', function () {
+    describe('post()', function () {
         it('should intercept the query result before the stream starts', function () {
             var spy = sinon.spy(function(stream) {
                 return stream.tap(function (r) {
@@ -196,13 +227,14 @@ describe('Query', function () {
                     reply(null, [{ first: 'Brad', last: 'Leupen' }]).fields(['first', 'last']);
                 })
                 .through(spy)
-                .tap(function (result) {
+                .post(function (result) {
                     result.fields.should.have.members(['first', 'last']);
                     result.fields.push('full');
                     spy.should.not.have.been.called;
                 })
                 .execute()
                 .then(function (result) {
+                    result.should.be.an.instanceOf(QueryResult);
                     result.fields.should.have.members(['first', 'last', 'full']);
                     return result.toArray();
                 })
@@ -210,6 +242,30 @@ describe('Query', function () {
                     arr.should.have.length(1);
                     arr.should.have.deep.members([{ first: 'Brad', last: 'Leupen', full: 'Brad Leupen' }]);
                 });
+        });
+    });
+
+    describe('pre()', function () {
+        it('should intercept the query before the handler is called', function () {
+            var handlerSpy = sinon.spy(function(query, reply) {
+                reply();
+            });
+
+            var preSpy = sinon.spy(function (query) {
+                query.should.be.an.instanceOf(Query);
+                query.should.equal(q);
+                handlerSpy.should.not.have.been.called;
+            });
+
+            var q = new Query()
+                .handler(handlerSpy)
+                .pre(preSpy);
+
+            return q.execute()
+                .then(function() {
+                    preSpy.should.have.been.called;
+                    handlerSpy.should.have.been.called;
+                })
         });
     });
 });
