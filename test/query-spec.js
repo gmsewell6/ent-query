@@ -106,6 +106,20 @@ describe('Query', function () {
                     });
             });
 
+            it('should pass along first reply value if not an error', function () {
+                return new Query()
+                    .handler(function (query, reply) {
+                        reply([{ first: 'brad', last: 'leupen' }]);
+                    })
+                    .execute()
+                    .then(function (result) {
+                        return result.toArray();
+                    })
+                    .then(function (arr) {
+                        arr.should.have.deep.members([{ first: 'brad', last: 'leupen' }]);
+                    });
+            });
+
             it('should reject the promise with an asynchronous error', function () {
                 return new Query()
                     .handler(function (query, reply) {
