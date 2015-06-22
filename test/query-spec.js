@@ -3,6 +3,7 @@
 var sinon = require('sinon');
 var chai = require('chai');
 var P = require('bluebird');
+var $ = require('highland');
 chai.use(require('chai-as-promised'));
 chai.use(require('sinon-chai'));
 var should = chai.should();
@@ -242,9 +243,9 @@ describe('Query', function () {
                 })
                 .through(spy)
                 .post(function (result) {
+                    spy.should.not.have.been.called;
                     result.fields.should.have.members(['first', 'last']);
                     result.fields.push('full');
-                    spy.should.not.have.been.called;
                 })
                 .execute()
                 .then(function (result) {
@@ -282,6 +283,12 @@ describe('Query', function () {
                 })
         });
     });
+
+    describe('setLimit()', function () {
+        it('should set the limit on the query', function () {
+            new Query().setLimit(10).should.have.property('limit', 10);
+        });
+    });
 });
 
 describe('QueryResult', function () {
@@ -293,6 +300,28 @@ describe('QueryResult', function () {
             query.on('cancel', spy);
             result.cancel();
             spy.should.have.been.called;
+        });
+
+        it('should emit an end event in the handler via shim', function () {
+            var spy = sinon.spy();
+            return new Query()
+                .handler(function (query, reply) {
+                    var i = 0;
+                    reply(function (push, next) {
+                        push(null, i++);
+                        next();
+                    })
+                        .on('end', spy);
+                })
+                .execute()
+                .then(function (result) {
+                    result.cancel();
+                    return result.toArray();
+                })
+                .then(function(arr) {
+                    arr.length.should.equal(0);
+                    spy.should.have.been.called;
+                })
         });
     });
 
@@ -335,6 +364,45 @@ describe('QueryResult', function () {
             shim.selected(100);
 
             qr.selected.should.equal(100);
+        });
+    });
+
+    describe('when a query has a limit', function () {
+        var query;
+
+        beforeEach(function () {
+            query = new Query()
+                .handler(function (query, reply) {
+                    reply([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+                })
+                .setLimit(5);
+        });
+
+        it('should cut the stream off', function () {
+            return query.toArray()
+                .then(function(arr) {
+                    arr.should.have.members([1, 2, 3, 4, 5]);
+                })
+        });
+
+        it('should emit an end event', function () {
+            var onEnd = sinon.spy();
+
+            return new Query()
+                .handler(function (query, reply) {
+                    var i = 0;
+                    reply(function(push, next) {
+                        push(null, i++);
+                        next();
+                    })
+                        .on('end', onEnd);
+                })
+                .setLimit(5)
+                .toArray()
+                .then(function(arr) {
+                    arr.should.have.length(5);
+                    onEnd.should.have.been.called;
+                })
         });
     });
 });
