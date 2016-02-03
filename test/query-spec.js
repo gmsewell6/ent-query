@@ -365,6 +365,98 @@ describe('QueryResult', function () {
 
             qr.selected.should.equal(100);
         });
+
+        describe('field(<fieldName>)', function() {
+            it('set the position', function () {
+                var field = shim.field('foo');
+                field.position(5);
+                qr.fields.should.deep.equal({ foo: { position: 5 } });
+            });
+
+            it('set the label', function () {
+                var field = shim.field('foo');
+                field.label('Foo Bar');
+                qr.fields.should.deep.equal({ foo: { label: 'Foo Bar' } });
+            });
+
+            it('should set the type', function () {
+                var field = shim.field('foo');
+                field.type('geo_point');
+                qr.fields.should.deep.equal({ foo: { typeMapping: { type: 'geo_point' } } });
+            });
+
+            it('should set the type mapping', function () {
+                var field = shim.field('foo');
+                field.typeMapping({ type: 'geo_point' });
+                qr.fields.should.deep.equal({ foo: { typeMapping: { type: 'geo_point' } } });
+            });
+
+            it('should support chaining', function () {
+                shim.field('foo')
+                    .label('FooBar')
+                    .position(5)
+                    .type('geo_point');
+
+                qr.fields.should.deep.equal({
+                    foo: {
+                        label: 'FooBar',
+                        position: 5,
+                        typeMapping: { type: 'geo_point' }
+                    }
+                });
+            });
+        });
+
+        describe('field(<fieldName>, <callback>)', function() {
+            it('set the position', function () {
+                shim.field('foo', f => f.position(5));
+                qr.fields.should.deep.equal({ foo: { position: 5 } });
+            });
+
+            it('set the label', function () {
+                shim.field('foo', f => f.label('Foo Bar'));
+                qr.fields.should.deep.equal({ foo: { label: 'Foo Bar' } });
+            });
+
+            it('should set the type', function () {
+                shim.field('foo', f => f.type('geo_point'));
+                qr.fields.should.deep.equal({ foo: { typeMapping: { type: 'geo_point' } } });
+            });
+
+            it('should set the type mapping', function () {
+                shim.field('foo', f => f.typeMapping({ type: 'geo_point' }));
+                qr.fields.should.deep.equal({ foo: { typeMapping: { type: 'geo_point' } } });
+            });
+
+            it('should support chaining', function () {
+                shim.field('foo', function (f) {
+                    f
+                        .label('FooBar')
+                        .position(5)
+                        .type('geo_point');
+                });
+
+                qr.fields.should.deep.equal({
+                    foo: {
+                        label: 'FooBar',
+                        position: 5,
+                        typeMapping: { type: 'geo_point' }
+                    }
+                });
+            });
+
+            it('should support chaining multiple fields', function () {
+                shim.field('firstName', f => f.position(5))
+                    .field('lastName', f => f.label('Last Name'))
+                    .field('position', f => f.type('geo_point'));
+
+                qr.fields.should.deep.equal({
+                    firstName: { position: 5 },
+                    lastName: { label: 'Last Name' },
+                    position: { typeMapping: { type: 'geo_point' } }
+                });
+            });
+        });
     });
 
     describe('when a query has a limit', function () {
