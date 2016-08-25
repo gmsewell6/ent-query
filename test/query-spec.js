@@ -28,11 +28,7 @@ describe('Query', function () {
     describe('execute()', function () {
         describe('when no handler is defined', function () {
             it('should reject the promise', function () {
-                // return new Query('select * from country').execute().should.eventually.be.rejectedWith('Handler method not implemented. Did you forget to call handler()?');
-                return new Query('select * from country')
-                    .execute()
-                    .then(r => console.log(r))
-                    .catch(e => console.log('Error', e));
+                return new Query('select * from country').execute().should.eventually.be.rejectedWith('Handler method not implemented. Did you forget to call handler()?');
             });
         });
 
@@ -293,22 +289,6 @@ describe('Query', function () {
             new Query().setLimit(10).should.have.property('limit', 10);
         });
     });
-
-    it('should support caching', function () {
-        new Query().should.respondTo('cache');
-    });
-
-    describe('when a query is cached', function () {
-        it('should invoke its handler the first time', function () {
-            var handler = sinon.spy((q, r) => r([]));
-
-            return new Query()
-                .handler(handler)
-                .cache()
-                .execute()
-                .then(() => handler.should.have.been.called);
-        });
-    });
 });
 
 describe('QueryResult', function () {
@@ -367,9 +347,9 @@ describe('QueryResult', function () {
 
         it('should set the results fields', function () {
             shim.should.respondTo('fields');
-            shim.fields({ first: {}, last: {}});
+            shim.fields(['first', 'last']);
 
-            qr.fields.should.deep.equal({ first: {}, last: {}});
+            qr.fields.should.deep.equal(['first', 'last']);
         });
 
         it('should set the results meta', function () {
@@ -516,24 +496,5 @@ describe('QueryResult', function () {
                     onEnd.should.have.been.called;
                 })
         });
-    });
-
-    it('should whatever', function () {
-        function handler(query, reply) {
-            reply([{ first: 'brad', last: 'leupen' }, { first: 'hank', last: 'leupen' }])
-                .field('first', f => f.label('First Name'))
-                .field('last', f => f.label('Last Name'));
-        }
-
-        new Query('select * from country')
-            .handler((q, r) => r([{ first: 'Brad', last: 'Leupen' }]))
-            .options({ limit: 10 })
-            .cache('brad')
-            .through(r => r)
-            .execute()
-            .then(r => r.stream())
-
-
-
     });
 });
