@@ -26,7 +26,7 @@ describe('cachedHandler', function () {
                 .selected(2);
         };
 
-        return query.create('select * from accounts')
+        return query('select * from accounts')
             .handler(query.cachedHandler(handler, { cacheKey: _.constant('data') }))
             .execute()
             .then(() => client.hgetAsync('data', 'selected'))
@@ -40,7 +40,7 @@ describe('cachedHandler', function () {
                 .selected(2);
         };
 
-        return query.create('select * from accounts')
+        return query('select * from accounts')
             .handler(query.cachedHandler(handler, { cacheKey: _.constant('data') }))
             .execute()
             .then(qr => qr.toArray())
@@ -58,7 +58,7 @@ describe('cachedHandler', function () {
         };
 
         beforeEach(function () {
-            return query.create('select * from accounts')
+            return query('select * from accounts')
                 .handler(query.cachedHandler(handler, { cacheKey: _.constant('data') }))
                 .toArray();
         });
@@ -66,7 +66,7 @@ describe('cachedHandler', function () {
         it('should not invoke the handler again', function () {
             const handler = sinon.spy();
 
-            return query.create('select * from accounts')
+            return query('select * from accounts')
                 .handler(query.cachedHandler(handler, { cacheKey: _.constant('data') }))
                 .toArray()
                 .then(function (arr) {

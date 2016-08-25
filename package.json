@@ -35,9 +35,12 @@
     "bluebird": "^2.9.27",
     "ent-flow": "^1.0.0",
     "glib": "0.0.3",
+    "gulp-istanbul": "^1.1.1",
+    "gulp-mocha": "^3.0.1",
     "highland": "^2.5.1",
     "joi": "^6.10.1",
     "lodash": "^3.9.3",
+    "mocha": "^3.0.2",
     "object-hash": "^1.1.4",
     "redis": "^2.6.2"
   }
