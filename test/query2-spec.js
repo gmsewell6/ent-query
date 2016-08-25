@@ -1,15 +1,13 @@
 'use strict';
 
 const _ = require('lodash');
-const query = require('../lib/query2');
-const Query = query.Query;
-const QueryResult = query.QueryResult;
+const query = require('../lib');
 
 const chai = require('chai');
 const should = chai.should();
 const sinon = require('sinon');
 const P = require('bluebird');
-
+const QueryResult = require('../lib/query-result').QueryResult;
 const people = [{ first: 'Brad', last: 'Leupen' }, { first: 'Hank', last: 'Leupen' }];
 
 chai.use(require('sinon-chai'));
@@ -24,7 +22,7 @@ describe('Query2', function () {
 
         it('should set the handler', function () {
             const q = query.create('select * from accounts').handler(_.noop);
-            should.exist(q.defn._handler);
+            should.exist(q.defn.handler);
         });
     });
 

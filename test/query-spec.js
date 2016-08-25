@@ -8,8 +8,8 @@ chai.use(require('chai-as-promised'));
 chai.use(require('sinon-chai'));
 var should = chai.should();
 
-var Query = require('../lib/query').Query;
-var QueryResult = require('../lib/query').QueryResult;
+var Query = require('../lib/query-old').Query;
+var QueryResult = require('../lib/query-old').QueryResult;
 
 describe('Query', function () {
     describe('handler()', function () {
@@ -349,7 +349,7 @@ describe('QueryResult', function () {
             shim.should.respondTo('fields');
             shim.fields(['first', 'last']);
 
-            qr.fields.should.deep.equal(['first', 'last']);
+            qr.fields.should.have.keys(['first', 'last']);
         });
 
         it('should set the results meta', function () {

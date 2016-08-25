@@ -1,7 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
-const query = require('../lib/query2');
+const query = require('../lib');
 const redis = require('redis');
 const client = redis.createClient();
 
