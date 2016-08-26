@@ -409,6 +409,13 @@ describe('Query', function () {
                 .execute()
                 .should.be.rejectedWith('Ooops!');
         });
+
+        it('should throw errors returned to reply', function () {
+            return query('select * from foo')
+                .handler((q, r) => r(new Error('Ooops!')))
+                .execute()
+                .should.be.rejectedWith('Ooops!');
+        });
     });
 
     describe('use()', function () {
@@ -455,6 +462,29 @@ describe('Query', function () {
                 .build()
                 .field('first')
                 .should.be.an.instanceof(FieldConfigurator);
+        });
+    });
+
+    describe('progress()', function () {
+        it('should emit a progress event', function () {
+            const spy = sinon.spy();
+
+            return query('select * from foo')
+                .handler((q, r) => {
+                    q.progress(1);
+                    q.progress(2);
+                    q.progress(3);
+                    r(people);
+                })
+                .build()
+                .on('progress', spy)
+                .execute()
+                .then(() => {
+                    spy.should.have.been.calledThrice
+                    spy.firstCall.args.should.have.members([1]);
+                    spy.secondCall.args.should.have.members([2]);
+                    spy.thirdCall.args.should.have.members([3]);
+                });
         });
     });
 });
