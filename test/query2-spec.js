@@ -417,8 +417,8 @@ describe('Query', function () {
 
             const q = query('select * from accounts')
                 .handler((q, r) => r(people))
-                .use(spy)
-                .build();
+                .build()
+                .use(spy);
 
             q.should.have.property('plugins').that.has.members([spy]);
         });
@@ -428,10 +428,33 @@ describe('Query', function () {
 
             const q = query('select * from accounts')
                 .handler((q, r) => r(people))
-                .use(spy)
-                .build();
+                .build()
+                .use(spy);
 
             spy.should.have.been.calledWith(q);
+        });
+    });
+
+    describe('field()', function () {
+        it('should configure the query result field', function () {
+            return query('select * from foo')
+                .handler((q, r) => r(people))
+                .build()
+                .field('first', f => f.label('First Name'))
+                .field('last', f => f.label('Last Name'))
+                .execute()
+                .then(qr => {
+                    _.get(qr, 'fields.first.label', '').should.equal('First Name');
+                    _.get(qr, 'fields.last.label', '').should.equal('Last Name');
+                });
+        });
+
+        it('should return a field configurator', function () {
+            return query('select * from foo')
+                .handler((q, r) => r(people))
+                .build()
+                .field('first')
+                .should.be.an.instanceof(FieldConfigurator);
         });
     });
 });
@@ -503,6 +526,31 @@ describe('QueryResult', function () {
                 })
                 .execute()
                 .then(function (result) {
+                    return result.toArray();
+                })
+                .then(function (arr) {
+                    arr.length.should.equal(0);
+                    spy.should.have.been.called;
+                });
+        });
+
+        it('should be called if the query is cancelled after execution', function () {
+            const spy = sinon.spy();
+            var q = query()
+                .handler(function (query, reply) {
+                    query.cancel();
+                    let i = 0;
+                    reply(function (push, next) {
+                        push(null, i++);
+                        next();
+                    })
+                        .on('end', spy);
+                })
+                .build();
+
+            q.execute()
+                .then(function (result) {
+                    q.cancel();
                     return result.toArray();
                 })
                 .then(function (arr) {
