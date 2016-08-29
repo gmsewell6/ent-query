@@ -335,17 +335,6 @@ describe('QueryBuilder', function () {
     });
 
     describe('use()', function () {
-        it('should add the plugin to the querys plugins array', function () {
-            const spy = sinon.spy();
-
-            const q = query('select * from accounts')
-                .handler((q, r) => r(people))
-                .use(spy)
-                .build();
-
-            q.should.have.property('plugins').that.has.members([spy]);
-        });
-
         it('should invoke the plugin', function () {
             const spy = sinon.spy();
 
@@ -365,6 +354,18 @@ describe('QueryBuilder', function () {
                 .language('sql')
                 .build()
                 .should.have.property('language');
+        });
+    });
+
+    describe('on()', function () {
+        it('should forward event registrations to the query object', function () {
+            const spy = sinon.spy();
+
+            return query('select * from whatever')
+                .handler((q, r) => r(people))
+                .on('execute', spy)
+                .execute()
+                .then(r => spy.should.have.been.called);
         });
     });
 });
@@ -419,17 +420,6 @@ describe('Query', function () {
     });
 
     describe('use()', function () {
-        it('should add the plugin to the querys plugins array', function () {
-            const spy = sinon.spy();
-
-            const q = query('select * from accounts')
-                .handler((q, r) => r(people))
-                .build()
-                .use(spy);
-
-            q.should.have.property('plugins').that.has.members([spy]);
-        });
-
         it('should invoke the plugin', function () {
             const spy = sinon.spy();
 
