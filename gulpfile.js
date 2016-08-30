@@ -17,9 +17,9 @@ gulp.task('test', function (done) {
         .pipe(istanbul.hookRequire())
         .on('finish', function () {
             gulp.src(['test/*.js'])
-                .pipe(mocha())
+                .pipe(mocha({ harmony: true }))
                 .pipe(istanbul.writeReports())
-                .on('end', done)
+                .on('end', done);
         });
 });
 
