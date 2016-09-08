@@ -3,6 +3,7 @@
 const _ = require('lodash');
 const query = require('../lib');
 
+const $ = require('highland');
 const chai = require('chai');
 const should = chai.should();
 const sinon = require('sinon');
@@ -271,6 +272,19 @@ describe('QueryBuilder', function () {
                 done();
             });
         });
+
+        it('should stream a stream', function () {
+            const stream1 = query()
+                .handler((q, r) => r(people))
+                .through([])
+                .stream();
+
+            return query()
+                .handler((q, r) => r(stream1))
+                .through([])
+                .toArray()
+                .then(arr => arr.should.have.deep.members(people));
+        });
     });
 
     describe('pre()', function () {
@@ -492,6 +506,19 @@ describe('QueryResult', function () {
                 .then(qr => qr.stream())
                 .then(s => new P(r => s.toArray(r)))
                 .then(d => d.should.deep.equal(people));
+        });
+
+        it('should end a limited stream', function () {
+            const spy = sinon.spy();
+
+            return query()
+                .handler((q, r) => r(people).on('end', spy))
+                .limit(1)
+                .toArray()
+                .then(arr => {
+                    arr.should.have.lengthOf(1);
+                    spy.should.have.been.called;
+                });
         });
     });
 
