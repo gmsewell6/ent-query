@@ -12,6 +12,8 @@ const Query = require('../lib/query').Query;
 const QueryResult = require('../lib/query-result').QueryResult;
 const FieldConfigurator = require('../lib/field-configurator').FieldConfigurator;
 const people = [{ first: 'Brad', last: 'Leupen' }, { first: 'Hank', last: 'Leupen' }];
+const Writable = require('stream').Writable;
+const Readable = require('stream').Readable;
 
 chai.use(require('sinon-chai'));
 chai.use(require('chai-as-promised'));
@@ -382,6 +384,15 @@ describe('QueryBuilder', function () {
                 .then(r => spy.should.have.been.called);
         });
     });
+
+    describe('configure()', function () {
+        it('should configure the query', function () {
+            const q = query()
+                .handler((q, r) => r(people))
+                .configure({ payload: 'select * from whatever', limit: 10, plugins: [ sinon.spy() ]}).build();
+            q.should.have.property('payload', 'select * from whatever');
+        });
+    });
 });
 
 describe('Query', function () {
@@ -537,7 +548,7 @@ describe('QueryResult', function () {
     });
 
     describe('cancel()', function () {
-        it('should emit an end event in the handler via shim', function () {
+        it.only('should emit an end event in the handler via shim', function () {
             const spy = sinon.spy();
             return query()
                 .handler(function (query, reply) {
@@ -603,6 +614,26 @@ describe('QueryResult', function () {
                 .then(function (arr) {
                     arr.length.should.equal(0);
                     spy.should.have.been.called;
+                });
+        });
+
+        it('should emit an end event on result stream', function (done) {
+            query()
+                .handler(function (query, reply) {
+                    let i = 0;
+
+                    reply(new Readable({ objectMode: true, read: function() {
+                        setTimeout(() => this.push({ val: i++ }), 50);
+                    }}));
+                })
+                .execute()
+                .tap(function (qr) {
+                    let stream = qr.stream();
+                    stream.on('end', done)
+                        .pipe(new Writable({ objectMode: true, write: (r, e, d) => { console.log(r); d(); }}));
+                })
+                .then(qr => {
+                    setTimeout(() => qr.cancel(), 1000);
                 });
         });
     });
