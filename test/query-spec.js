@@ -148,7 +148,14 @@ describe('QueryBuilder', function () {
                 .fields(['first', 'last'])
                 .handler((q, r) => r(people))
                 .execute()
-                .then(qr => qr.fields.should.deep.equal({ first: {}, last: {} }));
+                .then(qr => qr.fields.should.deep.equal({
+                    first: {
+                        position: 0
+                    },
+                    last: {
+                        position: 1
+                    }
+                }));
         });
     });
 
@@ -548,7 +555,7 @@ describe('QueryResult', function () {
     });
 
     describe('cancel()', function () {
-        it.only('should emit an end event in the handler via shim', function () {
+        it('should emit an end event in the handler via shim', function () {
             const spy = sinon.spy();
             return query()
                 .handler(function (query, reply) {
