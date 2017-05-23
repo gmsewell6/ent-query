@@ -34,7 +34,7 @@
   "dependencies": {
     "bluebird": "^2.9.27",
     "ent-flow": "^1.0.0",
-    "glib": "0.0.3",
+    "glib": "^1.0.0",
     "gulp-istanbul": "^1.1.1",
     "gulp-mocha": "^3.0.1",
     "highland": "^2.5.1",
