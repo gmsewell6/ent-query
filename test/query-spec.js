@@ -724,13 +724,7 @@ describe('QueryResult', function () {
             it('should set the type', function () {
                 var field = shim.field('foo');
                 field.type('geo_point');
-                qr.fields.should.deep.equal({ foo: { typeMapping: { type: 'geo_point' } } });
-            });
-
-            it('should set the type mapping', function () {
-                var field = shim.field('foo');
-                field.typeMapping({ type: 'geo_point' });
-                qr.fields.should.deep.equal({ foo: { typeMapping: { type: 'geo_point' } } });
+                qr.fields.should.deep.equal({ foo: { type: 'geo_point' } });
             });
 
             it('should support chaining', function () {
@@ -743,7 +737,7 @@ describe('QueryResult', function () {
                     foo: {
                         label: 'FooBar',
                         position: 5,
-                        typeMapping: { type: 'geo_point' }
+                        type: 'geo_point'
                     }
                 });
             });
@@ -762,12 +756,7 @@ describe('QueryResult', function () {
 
             it('should set the type', function () {
                 shim.field('foo', f => f.type('geo_point'));
-                qr.fields.should.deep.equal({ foo: { typeMapping: { type: 'geo_point' } } });
-            });
-
-            it('should set the type mapping', function () {
-                shim.field('foo', f => f.typeMapping({ type: 'geo_point' }));
-                qr.fields.should.deep.equal({ foo: { typeMapping: { type: 'geo_point' } } });
+                qr.fields.should.deep.equal({ foo: { type: 'geo_point' } });
             });
 
             it('should support chaining', function () {
@@ -782,7 +771,7 @@ describe('QueryResult', function () {
                     foo: {
                         label: 'FooBar',
                         position: 5,
-                        typeMapping: { type: 'geo_point' }
+                        type: 'geo_point'``
                     }
                 });
             });
@@ -795,7 +784,7 @@ describe('QueryResult', function () {
                 qr.fields.should.deep.equal({
                     firstName: { position: 5 },
                     lastName: { label: 'Last Name' },
-                    position: { typeMapping: { type: 'geo_point' } }
+                    position: { type: 'geo_point' }
                 });
             });
         });
