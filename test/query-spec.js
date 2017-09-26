@@ -243,6 +243,58 @@ describe('QueryBuilder', function () {
                 .then(r => spy.should.have.been.calledWith(r));
         });
 
+        it('should emit a queryError event for a sync error in the handler', function () {
+            let thrown;
+            const error = new Error('Query handler sync error');
+            const handler = () => {
+                throw error;
+            };
+
+            const spy = sinon.spy();
+
+            return query('select * fromwhere')
+                .handler(handler)
+                .build()
+                .on('queryError', spy)
+                .execute()
+                .then(() => {
+                    throw new Error('Should not succeed');
+                })
+                .catch(err => {
+                    thrown = err;
+                })
+                .finally(() => {
+                    should.exist(thrown);
+                    thrown.should.equal(error);
+                    spy.should.have.been.calledOnce;
+                    spy.should.have.been.calledWith(error);
+                });
+        });
+
+        it('should emit a queryError event for an error passed to the reply shim', function () {
+            let thrown;
+            const error = new Error('Query handler reply(error)');
+            const spy = sinon.spy();
+
+            return query('select * fromwhere')
+                .handler((q, r) => r(error))
+                .build()
+                .on('queryError', spy)
+                .execute()
+                .then(() => {
+                    throw new Error('Should not succeed');
+                })
+                .catch(err => {
+                    thrown = err;
+                })
+                .finally(() => {
+                    should.exist(thrown);
+                    thrown.should.equal(error);
+                    spy.should.have.been.calledOnce;
+                    spy.should.have.been.calledWith(error);
+                });
+        });
+
         it('should include a post() function on the context object', function () {
             const handler = function (query, reply) {
                 query.should.respondTo('post');
@@ -313,7 +365,7 @@ describe('QueryBuilder', function () {
     });
 
     describe('post()', function () {
-        it('should invoke pre before calling handler', function () {
+        it('should invoke post before calling handler', function () {
             const spy = sinon.spy();
 
             const handler = (q, r) => {
@@ -336,6 +388,74 @@ describe('QueryBuilder', function () {
                 .through(s => s.map(r => _.assign(r, { full: `${r.first} ${r.last}` })))
                 .toArray()
                 .then(arr => _.pluck(arr, 'full').should.have.members(['Brad Leupen', 'Hank Leupen']));
+        });
+    });
+
+    describe('error()', function () {
+        it('should invoke error handlers on a synchronous handler error', function () {
+            let thrown;
+            const error = new Error('Sync error');
+            const handler0 = sinon.spy();
+            const handler1 = sinon.spy();
+
+            const run = () => query('select *fromasdfsdf')
+                .handler((q, r) => {
+                    throw error;
+                })
+                .error(handler0)
+                .error(() => P.delay(500))
+                .error(handler1)
+                .execute();
+
+            return run()
+                .then(() => {
+                    throw new Error('Should not have worked');
+                })
+                .catch(err => {
+                    thrown = err;
+                })
+                .finally(() => {
+                    should.exist(thrown);
+                    thrown.should.equal(error);
+                    handler0.should.have.been.calledOnce;
+                    handler0.should.have.been.calledWith(thrown);
+                    handler1.should.have.been.calledOnce;
+                    handler1.should.have.been.calledWith(thrown);
+                    return run()
+                        .should.be.rejectedWith(error);
+                });
+        });
+
+        it('should invoke error handlers on a handler reply error', function () {
+            let thrown;
+            const error = new Error('Sync error');
+            const handler0 = sinon.spy();
+            const handler1 = sinon.spy();
+
+            const run = () => query('select *fromasdfsdf')
+                .handler((q, r) => r(error))
+                .error(handler0)
+                .error(() => P.delay(500))
+                .error(handler1)
+                .execute();
+
+            return run()
+                .then(() => {
+                    throw new Error('Should not have worked');
+                })
+                .catch(err => {
+                    thrown = err;
+                })
+                .finally(() => {
+                    should.exist(thrown);
+                    thrown.should.equal(error);
+                    handler0.should.have.been.calledOnce;
+                    handler0.should.have.been.calledWith(thrown);
+                    handler1.should.have.been.calledOnce;
+                    handler1.should.have.been.calledWith(thrown);
+                    return run()
+                        .should.be.rejectedWith(error);
+                });
         });
     });
 
@@ -416,6 +536,14 @@ describe('Query', function () {
             new Query('select * from whatever')
                 .through(_.noop)
                 .should.have.property('throughHandlers').that.has.lengthOf(1);
+        });
+    });
+
+    describe('error()', function () {
+        it('should append to the errorHandlers array', function () {
+            new Query('select foo frombar')
+                .error(_.noop)
+                .should.have.property('errorHandlers').that.has.lengthOf(1);
         });
     });
 
@@ -637,7 +765,7 @@ describe('QueryResult', function () {
                 .tap(function (qr) {
                     let stream = qr.stream();
                     stream.on('end', done)
-                        .pipe(new Writable({ objectMode: true, write: (r, e, d) => { console.log(r); d(); }}));
+                        .pipe(new Writable({ objectMode: true, write: (r, e, d) => { console.log(r); d(); } }));
                 })
                 .then(qr => {
                     setTimeout(() => qr.cancel(), 1000);
