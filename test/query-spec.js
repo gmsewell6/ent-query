@@ -12,8 +12,7 @@ const Query = require('../lib/query').Query;
 const QueryResult = require('../lib/query-result').QueryResult;
 const FieldConfigurator = require('../lib/field-configurator').FieldConfigurator;
 const people = [{ first: 'Brad', last: 'Leupen' }, { first: 'Hank', last: 'Leupen' }];
-const Writable = require('stream').Writable;
-const Readable = require('stream').Readable;
+const { Readable, Writable } = require('stream');
 
 chai.use(require('sinon-chai'));
 chai.use(require('chai-as-promised'));
@@ -255,7 +254,7 @@ describe('QueryBuilder', function () {
             return query('select * fromwhere')
                 .handler(handler)
                 .build()
-                .on('queryError', spy)
+                .on('error', spy)
                 .execute()
                 .then(() => {
                     throw new Error('Should not succeed');
@@ -279,7 +278,7 @@ describe('QueryBuilder', function () {
             return query('select * fromwhere')
                 .handler((q, r) => r(error))
                 .build()
-                .on('queryError', spy)
+                .on('error', spy)
                 .execute()
                 .then(() => {
                     throw new Error('Should not succeed');
