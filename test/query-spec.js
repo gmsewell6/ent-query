@@ -254,7 +254,7 @@ describe('QueryBuilder', function () {
             return query('select * fromwhere')
                 .handler(handler)
                 .build()
-                .on('error', spy)
+                .on('queryError', spy)
                 .execute()
                 .then(() => {
                     throw new Error('Should not succeed');
@@ -278,7 +278,7 @@ describe('QueryBuilder', function () {
             return query('select * fromwhere')
                 .handler((q, r) => r(error))
                 .build()
-                .on('error', spy)
+                .on('queryError', spy)
                 .execute()
                 .then(() => {
                     throw new Error('Should not succeed');
