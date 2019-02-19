@@ -1,6 +1,6 @@
 {
   "name": "ent-query",
-  "version": "7.1.0-alpha4",
+  "version": "7.0.3",
   "description": "A tiny query interface",
   "main": "lib/index.js",
   "directories": {
