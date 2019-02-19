@@ -37,39 +37,7 @@ describe('multiHandler', function () {
         ])
     });
 
-    it('should forward query cancellations', async function () {
-        let cancelled = false;
-        const handler = function (query, reply) {
-            query.on('cancel', () => cancelled = true );
-            let cnt = 0;
-            const stream = new Readable({
-                objectMode: true,
-                read: function () {
-                    if (!cancelled) this.push({ id: cnt++ });
-                }
-            });
-            reply(stream);
-        };
-        const q = query({}).handler(multi(handler)).build();
-        const qr = await q.execute({});
-        try {
-            const stream = await qr.stream();
-            await new Promise(resolve => {
-                stream.pipe(new Writable({
-                    objectMode: true,
-                    write: () => {
-                        q.cancel();
-                        resolve();
-                    }
-                }))
-            });
-        } catch (err) {
-
-        }
-        cancelled.should.be.true;
-    });
-
-    it.only('should propagate end events', async function () {
+    it('should propagate end events', async function () {
         let spy = sinon.spy();
         const handler = function (query, reply) {
             let cnt = 0;
