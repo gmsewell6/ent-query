@@ -12,7 +12,7 @@ const Query = require('../lib/query').Query;
 const QueryResult = require('../lib/query-result').QueryResult;
 const FieldConfigurator = require('../lib/field-configurator').FieldConfigurator;
 const people = [{ first: 'Brad', last: 'Leupen' }, { first: 'Hank', last: 'Leupen' }];
-const { Readable, Writable } = require('stream');
+const { Readable, Writable, pipeline } = require('stream');
 
 chai.use(require('sinon-chai'));
 chai.use(require('chai-as-promised'));
@@ -515,7 +515,7 @@ describe('QueryBuilder', function () {
         it('should configure the query', function () {
             const q = query()
                 .handler((q, r) => r(people))
-                .configure({ payload: 'select * from whatever', limit: 10, plugins: [ sinon.spy() ]}).build();
+                .configure({ payload: 'select * from whatever', limit: 10, plugins: [sinon.spy()] }).build();
             q.should.have.property('payload', 'select * from whatever');
         });
     });
@@ -665,6 +665,90 @@ describe('QueryResult', function () {
                     spy.should.have.been.called;
                 });
         });
+
+        it(`should propagate in-stream errors occurring in the source`, async () => {
+            let recNum = 0, written = [];
+            const sourceError = new Error(`Source in-stream error. If this is thrown and not caught by pipeline, it blew up the domain`);
+            const readableSource = new Readable({
+                objectMode: true,
+                read () {
+                    if (this.__reading) return;
+                    setTimeout(() => {
+                        this.__reading = true;
+                        if (recNum++ >= 9) return this.emit('error', sourceError);
+                        this.push({ foo: Date.now() });
+                        this.__reading = false;
+                    });
+                }
+            });
+            const queryResultEndSpy = sinon.spy();
+            const result = await query()
+                .handler((query, reply) => reply(null, readableSource)
+                    .on('end', queryResultEndSpy))
+                .execute();
+
+            const writable = new Writable({
+                objectMode: true,
+                write (rec, enc, done) {
+                    written.push(rec);
+                    done();
+                }
+            });
+
+            const $resultHighlandStream = result.stream();
+            const pipelineSuccessSpy = sinon.spy();
+            const pipelineErrorSpy = sinon.spy();
+            await new P((resolve, reject) => {
+                pipeline(
+                    $resultHighlandStream,
+                    writable,
+                    err => {
+                        if (err) return reject(err);
+                        resolve(written);
+                    }
+                );
+            })
+                .then(pipelineSuccessSpy)
+                .catch(pipelineErrorSpy);
+
+            pipelineSuccessSpy.should.not.have.been.called;
+            pipelineErrorSpy.should.have.been.calledOnce;
+            pipelineErrorSpy.should.have.been.calledWithExactly(sourceError);
+            recNum.should.equal(10);
+            queryResultEndSpy.should.have.been.calledOnce;
+        });
+
+        it(`should properly reject call to toArray on an in-stream error`, async () => {
+            let recNum = 0;
+            const sourceError = new Error(`Source in-stream error. If this is not caught as queryResult.toArray() rejection, it blew up the domain`);
+            const readableSource = new Readable({
+                objectMode: true,
+                read () {
+                    if (this.__reading) return;
+                    setTimeout(() => {
+                        this.__reading = true;
+                        if (recNum++ >= 9) return this.emit('error', sourceError);
+                        this.push({ foo: Date.now() });
+                        this.__reading = false;
+                    });
+                }
+            });
+            const queryResultEndSpy = sinon.spy();
+            let caught;
+            try {
+                const result = await query()
+                    .handler((query, reply) => reply(null, readableSource)
+                        .on('end', queryResultEndSpy))
+                    .execute();
+                await result.toArray();
+                should.not.exist(`Successful queryResult.toArray() call`);
+            } catch (err) {
+                caught = err;
+            }
+            should.exist(caught);
+            caught.should.deep.equal(sourceError);
+            recNum.should.equal(10);
+        });
     });
 
     describe('toArray()', function () {
@@ -740,7 +824,7 @@ describe('QueryResult', function () {
                 })
                 .build();
 
-            q.execute()
+            return q.execute()
                 .then(function (result) {
                     q.cancel();
                     return result.toArray();
@@ -756,15 +840,21 @@ describe('QueryResult', function () {
                 .handler(function (query, reply) {
                     let i = 0;
 
-                    reply(new Readable({ objectMode: true, read: function() {
-                        setTimeout(() => this.push({ val: i++ }), 50);
-                    }}));
+                    reply(new Readable({
+                        objectMode: true, read: function () {
+                            setTimeout(() => this.push({ val: i++ }), 50);
+                        }
+                    }));
                 })
                 .execute()
                 .tap(function (qr) {
                     let stream = qr.stream();
                     stream.on('end', done)
-                        .pipe(new Writable({ objectMode: true, write: (r, e, d) => { console.log(r); d(); } }));
+                        .pipe(new Writable({
+                            objectMode: true, write: (r, e, d) => {
+                                d();
+                            }
+                        }));
                 })
                 .then(qr => {
                     setTimeout(() => qr.cancel(), 1000);
@@ -835,7 +925,7 @@ describe('QueryResult', function () {
             qr.selected.should.equal(100);
         });
 
-        describe('field(<fieldName>)', function() {
+        describe('field(<fieldName>)', function () {
             it('set the position', function () {
                 var field = shim.field('foo');
                 field.position(5);
@@ -870,7 +960,7 @@ describe('QueryResult', function () {
             });
         });
 
-        describe('field(<fieldName>, <callback>)', function() {
+        describe('field(<fieldName>, <callback>)', function () {
             it('set the position', function () {
                 shim.field('foo', f => f.position(5));
                 qr.fields.should.deep.equal({ foo: { position: 5 } });
