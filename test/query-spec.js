@@ -671,7 +671,7 @@ describe('QueryResult', function () {
             const sourceError = new Error(`Source in-stream error. If this is thrown and not caught by pipeline, it blew up the domain`);
             const readableSource = new Readable({
                 objectMode: true,
-                read () {
+                read() {
                     if (this.__reading) return;
                     setTimeout(() => {
                         this.__reading = true;
@@ -689,7 +689,7 @@ describe('QueryResult', function () {
 
             const writable = new Writable({
                 objectMode: true,
-                write (rec, enc, done) {
+                write(rec, enc, done) {
                     written.push(rec);
                     done();
                 }
@@ -723,7 +723,7 @@ describe('QueryResult', function () {
             const sourceError = new Error(`Source in-stream error. If this is not caught as queryResult.toArray() rejection, it blew up the domain`);
             const readableSource = new Readable({
                 objectMode: true,
-                read () {
+                read() {
                     if (this.__reading) return;
                     setTimeout(() => {
                         this.__reading = true;
@@ -942,6 +942,20 @@ describe('QueryResult', function () {
                 var field = shim.field('foo');
                 field.type('geo_point');
                 qr.fields.should.deep.equal({ foo: { dataType: 'geo_point' } });
+            });
+
+            it('should set the field metadata', function () {
+                var field = shim.field('foo');
+                field.metadata({ schema: 1234, table: 5567, column: 4323423 });
+                qr.fields.should.deep.equal({
+                    foo: {
+                        metadata: {
+                            schema: 1234,
+                            table: 5567,
+                            column: 4323423
+                        }
+                    }
+                });
             });
 
             it('should support chaining', function () {
