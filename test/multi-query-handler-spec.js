@@ -10,22 +10,22 @@ describe('multiHandler', function () {
     it('should stream all the data', async function () {
         const handler = function (query, reply) {
             reply(query.payload)
-                .fields([ 'customer', 'date', 'amount' ])
+                .fields(['customer', 'date', 'amount'])
                 .selected(query.payload.length);
         };
 
         const data = await query([
             {
                 id: '1997',
-                payload: [ {
+                payload: [{
                     customer: 'Brad',
                     date: '1-1-1997',
                     amount: 100.00
-                } ]
+                }]
             },
             {
                 id: '1998',
-                payload: [ { customer: 'Hank', date: '1-1-1998', amount: 200.00 } ]
+                payload: [{ customer: 'Hank', date: '1-1-1998', amount: 200.00 }]
             }
         ])
             .handler(multi(handler, { discriminator: 'year' }))
@@ -34,7 +34,7 @@ describe('multiHandler', function () {
         data.should.have.deep.members([
             { customer: 'Brad', date: '1-1-1997', amount: 100.00, year: '1997' },
             { customer: 'Hank', date: '1-1-1998', amount: 200.00, year: '1998' }
-        ])
+        ]);
     });
 
     it('should propagate end events', async function () {
@@ -52,5 +52,27 @@ describe('multiHandler', function () {
         const q = query({}).handler(multi(handler)).limit(5).build();
         const values = await q.toArray();
         values.should.have.length(5);
+    });
+
+    it(`should carry the id through to the handler`, async () => {
+        const handler = (query, reply) => reply(query.payload.map(data => ({ id: query.id, data })));
+        const data = await query([
+            {
+                id: '2019',
+                payload: ['first', 'second']
+            },
+            {
+                id: '2020',
+                payload: ['third', 'fourth']
+            }
+        ])
+            .handler(multi(handler, { discriminator: 'year' }))
+            .toArray();
+        data.should.deep.equal([
+            { id: '2019', data: 'first', year: '2019' },
+            { id: '2019', data: 'second', year: '2019' },
+            { id: '2020', data: 'third', year: '2020' },
+            { id: '2020', data: 'fourth', year: '2020' },
+        ]);
     });
 });
