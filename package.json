@@ -38,7 +38,7 @@
     "highland": "^2.5.1",
     "joi": "^9.0.4",
     "lodash": "^3.9.3",
-    "object-hash": "^1.1.4",
+    "object-hash": "^3.0.0",
     "redis": "^2.6.2"
   }
 }
