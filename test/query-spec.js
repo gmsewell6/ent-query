@@ -766,7 +766,7 @@ describe('QueryResult', function () {
     });
 
     describe('cancel()', function () {
-        it('should emit an end event in the handler via shim', function () {
+        it('should emit an end event (delegated from internal passthrough) in the handler via shim if called on the QueryResult after handler execution and before streaming', function () {
             const spy = sinon.spy();
             return query()
                 .handler(function (query, reply) {
@@ -788,7 +788,7 @@ describe('QueryResult', function () {
                 });
         });
 
-        it('should be called if the query is cancelled during execution', function () {
+        it('should emit an end event (delegated from internal passthrough) in the handler via shim if called on the Query during a synchronous handler execution', function () {
             const spy = sinon.spy();
             return query()
                 .handler(function (query, reply) {
@@ -810,12 +810,11 @@ describe('QueryResult', function () {
                 });
         });
 
-        it('should be called if the query is cancelled after execution', function () {
+        it('should emit an end event (delegated from internal passthrough) in the handler via shim if called on the Query after handler execution and before streaming', function () {
             const spy = sinon.spy();
+            let i = 0;
             var q = query()
                 .handler(function (query, reply) {
-                    query.cancel();
-                    let i = 0;
                     reply(function (push, next) {
                         push(null, i++);
                         next();
@@ -829,35 +828,55 @@ describe('QueryResult', function () {
                     q.cancel();
                     return result.toArray();
                 })
-                .then(function (arr) {
+                .then(async function (arr) {
                     arr.length.should.equal(0);
+                    const lastI = i;
+                    await P.delay(500);
+                    // infinite generator in the handler should also not continute to run after cancel()
+                    i.should.equal(lastI);
                     spy.should.have.been.called;
                 });
         });
 
-        it('should emit an end event on result stream', function (done) {
-            query()
+        it('should emit an end event on the QueryResult\'s returned highland stream if called on the QueryResult while streaming', function () {
+            this.timeout(3000);
+            let uncork;
+            const promise = new P(resolve => uncork = resolve);
+            let i = 0;
+            return query()
                 .handler(function (query, reply) {
-                    let i = 0;
-
-                    reply(new Readable({
+                    const $data = new Readable({
                         objectMode: true, read: function () {
-                            setTimeout(() => this.push({ val: i++ }), 50);
+                            setTimeout(() => {
+                                if (!this.destroyed) this.push({ val: i++ });
+                            }, 50);
                         }
-                    }));
+                    });
+                    reply($data)
+                        // don't leave things lying around
+                        .on('end', () => $data.destroy());
                 })
                 .execute()
                 .tap(function (qr) {
+                    const data = [];
                     let stream = qr.stream();
-                    stream.on('end', done)
+                    stream.on('end', () => uncork(data))
                         .pipe(new Writable({
                             objectMode: true, write: (r, e, d) => {
+                                data.push(r);
                                 d();
                             }
                         }));
                 })
                 .then(qr => {
                     setTimeout(() => qr.cancel(), 1000);
+                    return promise;
+                })
+                .then(async data => {
+                    data.length.should.be.above(0);
+                    data.length.should.equal(i);
+                    await P.delay(1000);
+                    data.length.should.equal(i);
                 });
         });
     });
