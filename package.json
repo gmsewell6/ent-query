@@ -1,6 +1,6 @@
 {
-  "name": "ent-query",
-  "version": "8.0.2-core590.0",
+  "name": "@entrinsik/ent-query",
+  "version": "8.1.0-core590.0",
   "description": "A tiny query interface",
   "main": "lib/index.js",
   "directories": {
@@ -12,6 +12,9 @@
   "repository": {
     "type": "git",
     "url": "module_git_repo"
+  },
+  "publishConfig": {
+    "registry": "https://docker.entrinsik.com/repository/entNPM/"
   },
   "author": "Entrinsik",
   "license": "MIT",
@@ -32,12 +35,12 @@
     "sinon-chai": "^2.8.0"
   },
   "dependencies": {
+    "@entrinsik/ent-flow": "MILESTONE-5.9.0",
     "bluebird": "^2.9.27",
-    "ent-flow": "^1.0.0",
     "glib": "^1.2.0",
     "highland": "^2.5.1",
     "joi": "^9.0.4",
-    "lodash": "^3.9.3",
+    "lodash": "^4.17.21",
     "object-hash": "^3.0.0",
     "redis": "^2.6.2"
   }

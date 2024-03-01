@@ -386,7 +386,7 @@ describe('QueryBuilder', function () {
                 .handler((q, r) => r(people))
                 .through(s => s.map(r => _.assign(r, { full: `${r.first} ${r.last}` })))
                 .toArray()
-                .then(arr => _.pluck(arr, 'full').should.have.members(['Brad Leupen', 'Hank Leupen']));
+                .then(arr => _.map(arr, 'full').should.have.members(['Brad Leupen', 'Hank Leupen']));
         });
     });
 
