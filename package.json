@@ -35,7 +35,7 @@
     "sinon-chai": "^2.8.0"
   },
   "dependencies": {
-    "@entrinsik/ent-flow": "MILESTONE-5.9.0",
+    "@entrinsik/ent-flow": "1.2.0",
     "bluebird": "^2.9.27",
     "glib": "^1.2.0",
     "highland": "^2.5.1",

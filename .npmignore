@@ -1,0 +1,8 @@
+.idea/
+test/
+tmp/
+node_modules/
+*.tgz
+gulpfile.js
+.eslintrc.json
+.eslintignore
